@@ -3,14 +3,13 @@ import pandas as pd
 from datetime import datetime
 import pandas.tseries.offsets as offsets
 
-# 1) 페이지 설정 (와이드 레이아웃 사용)
 st.set_page_config(
     page_title="복지포인트 지급 대상 자동화 프로그램",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2) 최소한의 사용자 정의 CSS
+# 최소한의 사용자 정의 CSS
 st.markdown("""
 <style>
 /* 전체 바디 영역의 기본 여백 최소화 */
@@ -26,10 +25,17 @@ st.markdown("""
     background-color: #f1f4f8;
     padding: 1rem;
 }
+
+/* h1 태그 폰트 크기 조절: 타이틀을 조금 작게 설정 */
+h1 {
+    font-size: 1.8rem !important;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# 3) 메인 레이아웃
+# 메인 레이아웃
 st.title("복지포인트 지급 대상 자동화 프로그램")
 st.write("""
 이 프로그램은 업로드된 Excel 파일을 기반으로 **복지포인트 지급 대상 여부**를 자동으로 판별합니다.
