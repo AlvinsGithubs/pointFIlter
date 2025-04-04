@@ -9,37 +9,30 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 최소한의 사용자 정의 CSS
+# 사용자 정의 CSS
 st.markdown("""
 <style>
-/* 전체 바디 영역의 기본 여백 최소화 */
-.block-container {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
+/* 전체 문서에 대해 폰트 크기, 줄 간격, 폰트 패밀리 지정 */
+html, body, [class*="css"]  {
+    font-family: "Malgun Gothic", "맑은 고딕", sans-serif; /* Windows 환경에서 한글 폰트 */
+    font-size: 15px;           /* 전체 글자 크기 조정 */
+    line-height: 1.4;          /* 줄 간격 */
+    word-wrap: break-word;     /* 길이가 긴 단어도 자동 줄바꿈 */
 }
 
-/* 사이드바의 배경색 (원치 않으면 삭제 가능) */
-.sidebar .sidebar-content {
-    background-color: #f1f4f8;
-    padding: 1rem;
-}
-
-/* h1 태그 폰트 크기 조절: 타이틀을 조금 작게 설정 */
+/* h1 태그: st.title()에 해당 */
 h1 {
-    font-size: 1.8rem !important;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
+    font-size: 1.8rem !important;  /* 타이틀 폰트 크기 */
+    line-height: 1.2 !important;   /* 타이틀 줄 간격 */
+    margin-bottom: 0.5rem;         /* 타이틀 아래쪽 여백 */
 }
 </style>
 """, unsafe_allow_html=True)
 
-# 메인 레이아웃
 st.title("복지포인트 지급 대상 자동화 프로그램")
 st.write("""
-이 프로그램은 업로드된 Excel 파일을 기반으로 **복지포인트 지급 대상 여부**를 자동으로 판별합니다.
-좌측 사이드바에서 **지급 기준일**을 선택하고, **Excel 파일**을 업로드하세요.
+이 프로그램은 업로드된 Excel 파일을 기반으로 **복지포인트 지급 대상 여부**를 자동으로 판별합니다.  
+좌측 사이드바에서 **지급 기준일**을 선택하고, **Excel 파일**을 업로드하세요.  
 조건에 따라 **'대상'**, **'확인필요'** 행만 남기고 CSV 파일로 다운로드할 수 있습니다.
 """)
 
