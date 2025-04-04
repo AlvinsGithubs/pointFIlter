@@ -6,100 +6,79 @@ import pandas.tseries.offsets as offsets
 # 1) 페이지 설정 (와이드 레이아웃 사용)
 st.set_page_config(
     page_title="복지포인트 지급 대상 자동화 프로그램",
-    layout="wide",  # wide 모드
+    layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2) 사용자 정의 CSS: 전체 레이아웃은 여백은 주되, 고정 폭 제한 없이 유동적으로
+# 2) 최소한의 사용자 정의 CSS
 st.markdown("""
-    <style>
-    /* Streamlit 기본 컨테이너에 약간의 여백 추가 */
-    .reportview-container {
-        padding: 2rem 1rem;
-    }
-    /* 제목 중앙 정렬 및 스타일 */
-    .centered-title {
-        text-align: center;
-        color: #2c3e50;
-        font-size: 3rem;
-        font-weight: 700;
-        margin-top: 1rem;
-        margin-bottom: 0.5rem;
-    }
-    /* 설명(Description) 중앙 정렬, 자동 줄바꿈 설정 */
-    .centered-description {
-        text-align: center;
-        color: #34495e;
-        font-size: 1.2rem;
-        line-height: 1.6;
-        margin: 0 auto 1.5rem auto;
-        max-width: 100%;
-        word-wrap: break-word;
-    }
-    /* 사이드바 스타일 */
-    .sidebar .sidebar-content {
-        background-color: #f1f4f8;
-        padding: 1rem;
-    }
-    </style>
+<style>
+/* 전체 바디 영역의 기본 여백 최소화 */
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+/* 사이드바의 배경색 (원치 않으면 삭제 가능) */
+.sidebar .sidebar-content {
+    background-color: #f1f4f8;
+    padding: 1rem;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# 3) 메인 레이아웃: 중앙 정렬된 제목과 설명 (전체 너비 활용)
-st.markdown("<h1 class='centered-title'>복지포인트 지급 대상 자동화 프로그램</h1>", unsafe_allow_html=True)
-st.markdown("""
-<p class='centered-description'>
-이 프로그램은 업로드된 Excel 파일을 기반으로 복지포인트 지급 대상 여부를 자동으로 판별합니다.
-좌측 사이드바에서 <strong>지급 기준일</strong>을 선택하고, <strong>Excel 파일</strong>을 업로드하세요.
-이후 조건에 따라 '대상' 또는 '확인필요'인 행만 남기고 CSV 파일로 다운로드할 수 있습니다.
-</p>
-""", unsafe_allow_html=True)
+# 3) 메인 레이아웃
+st.title("복지포인트 지급 대상 자동화 프로그램")
+st.write("""
+이 프로그램은 업로드된 Excel 파일을 기반으로 **복지포인트 지급 대상 여부**를 자동으로 판별합니다.
+좌측 사이드바에서 **지급 기준일**을 선택하고, **Excel 파일**을 업로드하세요.
+조건에 따라 **'대상'**, **'확인필요'** 행만 남기고 CSV 파일로 다운로드할 수 있습니다.
+""")
 
-# 4) 사이드바 구성
-st.sidebar.title("설정")
+# 4) 사이드바
+st.sidebar.header("설정")
 pay_date_input = st.sidebar.date_input("지급 기준일을 선택하세요", datetime(2025, 4, 3))
 pay_date = datetime.combine(pay_date_input, datetime.min.time())
 uploaded_file = st.sidebar.file_uploader("Excel 파일 업로드 (.xlsx)", type=["xlsx"])
 
 def process_data(df, pay_date):
-    # "퇴직일"과 "입사일" 열을 날짜형으로 변환
     df["퇴직일"] = pd.to_datetime(df["퇴직일"], errors="coerce")
     df["입사일"] = pd.to_datetime(df["입사일"], errors="coerce")
-    
-    # "영문이름" 열의 빈도 계산 (중복 확인 용도)
+
     name_counts = df["영문이름"].value_counts()
-    
+
     def check_row(row):
-        # 1. 재직상태가 "퇴직"이면 바로 "제외"
+        # 1. 재직상태 "퇴직"이면 제외
         if row["재직상태"] == "퇴직":
             return "제외"
-        # 2. 퇴직일이 지급 기준일보다 이전이면 "확인필요"
+        # 2. 지급 기준일보다 퇴직일이 이전이면 "확인필요"
         if pd.notnull(row["퇴직일"]) and row["퇴직일"] < pay_date:
             return "확인필요"
         
-        # 3. 기타 제외 조건
+        # 기타 제외 조건
         cond_name = row["회사 내 이름"] in ["Jake.Kim", "Jae.Kim", "TEST HR"]
         cond_intern = row["직위"] == "Intern"
         cond_duplicate = name_counts.get(row["회사 내 이름"], 0) > 1
         
-        # 지급 기준일로부터 3개월 전 (3개월 내에 입사한 경우 제외)
         join_threshold = pay_date - offsets.DateOffset(months=3)
         cond_join_exclude = pd.isnull(row["입사일"]) or (row["입사일"] >= join_threshold)
-        
+
         if cond_name or cond_intern or cond_duplicate or cond_join_exclude:
             return "제외"
         return "대상"
-    
+
     df["지급대상여부"] = df.apply(check_row, axis=1)
-    
-    # "제외" 대상 행 제거하고, "대상"과 "확인필요"만 남김
+
+    # 제외 대상 행은 제거, 대상/확인필요만 남김
     df_filtered = df[df["지급대상여부"] != "제외"].copy()
-    
-    # 최종 결과: 사번, 이름, 회사 내 이름, 입사일, 지급대상여부 (마지막 열에 표기)
+
     cols_to_keep = ["사번", "이름", "회사 내 이름", "입사일", "지급대상여부"]
     df_final = df_filtered[cols_to_keep]
     return df_final
 
-# 5) 메인 컨텐츠: 파일 업로드 및 데이터 처리
+# 5) 메인 컨텐츠
 if uploaded_file:
     try:
         df = pd.read_excel(uploaded_file)
